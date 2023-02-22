@@ -245,7 +245,7 @@ final class JunitXmlLogger
      */
     public function testErrored(Errored $event): void
     {
-        $this->handleFault($event->test(), $event->throwable(), 'error');
+        $this->handleFault($event, 'error');
 
         $this->testSuiteErrors[$this->testSuiteLevel]++;
     }
@@ -293,15 +293,19 @@ final class JunitXmlLogger
      * @throws InvalidArgumentException
      * @throws NoDataSetFromDataProviderException
      */
-    private function handleFault(Test $test, Throwable $throwable, string $type): void
+    private function handleFault(Errored $event, string $type): void
     {
+        if ($this->currentTestCase === null) {
+            $this->createTestCase($event);
+        }
+
         assert($this->currentTestCase !== null);
 
-        $buffer = $this->testAsString($test);
+        $buffer = $this->testAsString($event->test());
 
         $buffer .= trim(
-            $throwable->description() . PHP_EOL .
-            $throwable->stackTrace()
+            $event->throwable()->description() . PHP_EOL .
+            $event->throwable()->stackTrace()
         );
 
         $fault = $this->document->createElement(
@@ -309,7 +313,7 @@ final class JunitXmlLogger
             Xml::prepareString($buffer)
         );
 
-        $fault->setAttribute('type', $throwable->className());
+        $fault->setAttribute('type', $event->throwable()->className());
 
         $this->currentTestCase->appendChild($fault);
     }
@@ -390,7 +394,7 @@ final class JunitXmlLogger
      * @throws InvalidArgumentException
      * @throws NoDataSetFromDataProviderException
      */
-    private function createTestCase(Prepared|MarkedIncomplete|Skipped $event): void
+    private function createTestCase(Prepared|MarkedIncomplete|Skipped|Errored $event): void
     {
         $testCase = $this->document->createElement('testcase');
 

@@ -192,7 +192,7 @@ final class TestRunner
         }
 
         ErrorHandler::instance()->disable();
-
+        //jonny
         if (isset($e)) {
             if ($test->wasPrepared()) {
                 Event\Facade::emitter()->testFinished(
